@@ -25,6 +25,11 @@
     <button v-if="colors.length > 0" v-on:click="download" class="download">
       Download
     </button>
+    <button v-if="colors.length > 0" v-on:click="savePalette" class="share">
+      Share
+    </button>
+
+
 
     <div class="footer">
       <p>
@@ -34,10 +39,19 @@
 
     <div class="modal-bg" v-if="showModal" transition="pop" v-on:click="closeModal">
       <div class="modal intro">
-        <img src="/static/images/download-img.png" width="265" height="274" style="margin-bottom:20px;">
+        <img src="/static/images/download-img.png" width="265" height="274" style="margin-left: auto; margin-right: auto; margin-bottom:20px;">
         <p class="headline">Your Craft library is downloading</p>
         <p>Unzip the file, put it somewhere safe<br> and then import it into Craft</p>
         <button class="woop" v-on:click="closeModal">Woop</button>
+      </div>
+    </div>
+
+    <div class="modal-bg" v-if="showShare" transition="pop">
+      <div class="modal intro">
+        <p class="headline">Share the link below</p>
+        <p>Anyone with the link will be able to<br>download and view your palette</p>
+        <input type="" v-model="shareUrl" disabled>
+        <button class="woop" v-on:click="closeModal">Got it!</button>
       </div>
     </div>
   </div>
@@ -55,6 +69,8 @@ export default {
     return {
       isChrome: true,
       showModal: false,
+      showShare: false,
+      shareUrl: "",
       colors: [
         {
           hex: '#F41C54',
@@ -76,6 +92,9 @@ export default {
   },
 
   created: function() {
+    Parse.initialize("swatchsies");
+    Parse.serverURL = 'http://swatchsies-api.herokuapp.com/parse';
+
     Vue.filter('nameColor', function (value) {
       var n_match  = ntc.name(value);
       return n_match[1]; 
@@ -83,6 +102,26 @@ export default {
 
     if (!window.chrome) {
       this.$set('isChrome', false)
+    }
+  },
+
+  route: {
+    data() {
+      if (this.$route.params.id != null) {
+        console.log(this.$route.params)
+
+        var ColorPalette = Parse.Object.extend("ColorPalette");
+        var query = new Parse.Query(ColorPalette);
+        query.equalTo("objectId", this.$route.params.id);
+        query.first({
+          success: function(object) {
+            this.$set('colors', JSON.parse(object.get('colors')))
+          }.bind(this),
+          error: function(error) {
+            alert("Error: " + error.code + " " + error.message);
+          }
+        });
+      }
     }
   },
 
@@ -140,6 +179,20 @@ export default {
 
     closeModal: function() {
       this.$set('showModal', false)
+      this.$set('showShare', false)
+    },
+
+    savePalette: function() {
+      this.$set('showShare', true)
+      console.log('Click')
+      console.log(JSON.stringify(this.colors))
+
+      var ColorPalette = Parse.Object.extend("ColorPalette");
+      var c = new ColorPalette();
+      c.save({colors: JSON.stringify(this.colors)}).then(function(object) {
+        console.log(object.id)
+        this.$set('shareUrl', `http://swatchsi.es/p/${object.id}`)
+      }.bind(this));
     }
   }
 }
@@ -259,6 +312,19 @@ html,body {
   text-transform: uppercase;
 }
 
+.modal input {
+  font-size: 16px;
+  border-radius: 50px;
+  border: 0px solid;
+  color: white;
+  margin-top: 20px;
+  transition: all 200ms cubic-bezier(0.165, 0.84, 0.44, 1);
+  background-color: rgba(0,0,0,0.3);
+  padding: 15px 20px;
+  outline: none;
+  flex: 1;
+}
+
 .row input:focus {
   background-color: white;
   border: 0px;
@@ -308,6 +374,7 @@ html,body {
 }
 
 .download,
+.share,
 .woop {
   border: 4px solid #0F73EE;
   background-color: transparent;
@@ -325,10 +392,15 @@ html,body {
   cursor: pointer;
 }
 
+.share {
+  float: right;
+  margin-right: 10px;
+}
+
 .woop {
   float: none;
   margin-top: 20px;
-  width: 80%;
+  flex: 1;
 }
 
 .remove {
@@ -368,6 +440,8 @@ html,body {
   width: 380px;
   text-align: center;
   padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
   color: white;
   border-radius: 20px;
   box-shadow: 0px 5px 16px rgba(0,0,0,0.1);
