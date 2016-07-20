@@ -7,7 +7,7 @@
       </p>
       <p>
         Create your own below using hex codes&hellip;
-        <template v-if="colors.length == 0">you'll need at least one color</template>
+        <template v-if="colors.length == 0"><span transition="expand">you'll need at least one color</span></template>
       </p>
     </div>
 
