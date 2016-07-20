@@ -120,7 +120,7 @@ export default {
 
 
       zip.generateAsync({type:"blob"}).then(function (blob) {
-        saveAs(blob, "swtachies-palette.library.zip");
+        saveAs(blob, "swatchies.library.zip");
       });
 
       this.$set('showModal', true)
